@@ -1,5 +1,12 @@
 #include <avr/io.h>
 
+int	is_pushed(char pin){
+
+	if ((PIND & (1<<pin)) == 0)
+		return (1);
+	return (0);
+}
+
 int	main(void){
 	DDRB |= (1<<PB0);
 	// 1<<PB0 = 1
@@ -10,7 +17,7 @@ int	main(void){
 	// &= sets the third bit to 0
 	while (1)
 	{
-		if ((PIND & (1<<PD2)) == 0)
+		if (is_pushed(PD2))
 			PORTB |= (1<<PB0);
 		else
 			PORTB &= ~(1<<PB0);
