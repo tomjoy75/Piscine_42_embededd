@@ -15,12 +15,6 @@ int	is_pushed(char pin){
 	return (0);
 }
 
-// int	is_lighted(char port){
-// 	if ((PINB & (1<<port)) == 1)
-// 	       return (1);
-// 	return (0);	
-// }
-
 void	actualise(char i){
 	PORTB &= ~(0b00000111);  // Erase PB0 to PB2
 	PORTB &= ~(1 << PB4);	// Erase PB4
@@ -47,7 +41,7 @@ int	main(void){
 	while (1){
 		while (is_pushed(PD2)){
 			if (!sw1_flag){
-				if (i < 16)
+				if (i < 15)
 					i++;
 				// Actualiser les lights sur ++i
 				actualise(i);

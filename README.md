@@ -16,3 +16,20 @@ Broche: PB7 PB6 PB5 PB4 PB3 PB2 PB1 PB0
 
 https://www.quora.com/What-is-DDRB-PORTB-and-PINB-and-what-do-they-do-What-does-it-mean-if-a-port-or-pin-is-an-output-pin
 
+
+## 🚀 Résumé rapide des opérations binaires  
+
+| **Action** | **Opération** | **Exemple (`n=2`)** |
+|------------|-------------|----------------------|
+| **Mettre le bit `n` à `1`** | `X |= (1 << n);` | `X |= 0b00000100;` |
+| **Mettre le bit `n` à `0`** | `X &= ~(1 << n);` | `X &= 0b11111011;` |
+| **Inverser le bit `n`** | `X ^= (1 << n);` | `X ^= 0b00000100;` |
+| **Tester si le bit `n` est `1`** | `if (X & (1 << n))` | `if (X & 0b00000100)` |
+| **Tester si le bit `n` est `0`** | `if (!(X & (1 << n)))` | `if (!(X & 0b00000100))` |
+| **Effacer plusieurs bits** | `X &= ~MASK;` | `X &= 0b11110011;` |
+| **Mettre plusieurs bits à `1`** | `X |= MASK;` | `X |= 0b00001100;` |
+| **Inverser plusieurs bits** | `X ^= MASK;` | `X ^= 0b00001100;` |
+| **Décaler à gauche (`×2`)** | `X <<= n;` | `X <<= 2;` |
+| **Décaler à droite (`÷2`)** | `X >>= n;` | `X >>= 2;` |
+
+
