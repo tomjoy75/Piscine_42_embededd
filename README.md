@@ -32,4 +32,6 @@ https://www.quora.com/What-is-DDRB-PORTB-and-PINB-and-what-do-they-do-What-does-
 | **Décaler à gauche (`×2`)** | `X <<= n;` | `X <<= 2;` |
 | **Décaler à droite (`÷2`)** | `X >>= n;` | `X >>= 2;` |
 
+## For the clock
 
+https://qiriro.com/bme6163/static_files/notes/L3/Newbie's%20Guide%20to%20AVR%20Timers.pdf
