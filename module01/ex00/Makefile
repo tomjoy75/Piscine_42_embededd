@@ -9,7 +9,7 @@ all: hex flash
 hex:
 	avr-gcc -mmcu=$(CPU) -DF_CPU=$(F_CPU) -Os -o $(NAME).elf $(NAME).c
 	avr-objcopy -O ihex $(NAME).elf $(NAME).hex
-flash:
+flash: hex
 	avrdude -c arduino -p m328p -U flash:w:main.hex:i -P $(PORT) -b $(BAUD)
 clean:
 	rm -f *.hex *.bin *.elf *.o
