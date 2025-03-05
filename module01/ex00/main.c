@@ -22,7 +22,7 @@ void	wait(uint32_t delay) {
 }
 
 uint32_t	compute_delay(void){
-	double		iter_time = 4.0 / (double)F_CPU; // Time for 1 iteration
+	double		iter_time = 30.0 / (double)F_CPU; // Time for 1 iteration i seconds
 	uint32_t	delay = (uint32_t)((DELAY / 1000.0) / iter_time); // Compute in ns
 	return (delay);
 }
