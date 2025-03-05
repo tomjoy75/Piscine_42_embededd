@@ -22,7 +22,7 @@ int	main(void){
 	DDRB |= (1<<PB1); // Configure PB1 as output	
 	//TCCR1A = 0;
 	TCCR1B = (1<<WGM12); // CTC mode
-	OCR1A = 7811;
+	OCR1A = 7811; // (F_CPU / Prescaler * Temps) - 1
 	// (before prescale)F_CPU = 16Mhz = 16000000 Hz
 	// (after prescale) F_CPU = 16000000 / 1024  = 15624
 	// (2 operation by sec) OCR1A = 15624 / 2 -1 = 7811

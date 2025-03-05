@@ -4,7 +4,7 @@
 Un **Timer** est un compteur matériel qui **s'incrémente automatiquement** à chaque cycle d'horloge ou selon un prescaler. Il permet :
 - ✅ **Mesurer le temps** (délais précis)
 - ✅ **Générer des interruptions périodiques**
-- ✅ **Créer des signaux PWM**
+- ✅ **Créer des signaux PWM (Pulse Width Modulation)`**
 - ✅ **Déclencher des actions automatiques sans bloquer le programme**
 
 ### 🛠 **Timers disponibles sur ATmega328P**  
