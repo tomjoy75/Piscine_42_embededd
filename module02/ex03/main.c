@@ -18,7 +18,7 @@ void	uart_tx(void){
 	UDR0 = c;
 }
 
-ISR(USART_RX_vect){
+ISR(USART_RX_vect){ // Interruption declenched by an input char
 	c = UDR0;
 	if (c >= 'a' && c <= 'z')
 		c -= 32;
