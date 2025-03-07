@@ -42,7 +42,8 @@ void	timer_init(void){
 void uart_printstr(const char *str) {
 	int i = 0;
 	while (str[i] && i < sizeof(uart_buffer) - 1){
-		uart_buffer[i++] = str[i];
+		uart_buffer[i] = str[i];
+		i++;
 	}
 	uart_buffer[i] = '\0';
     uart_index = 0;
