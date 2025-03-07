@@ -14,4 +14,4 @@ flash: hex
 clean:
 	rm -f *.hex *.bin *.elf *.o
 
-# https://www.pololu.com/docs/0J31/5
+# https://embedthreads.com/wp-content/uploads/2024/04/Make_-AVR-Programming_-Learning-to-Write-Software-for-Hardware-PDFDrive-.pdf
