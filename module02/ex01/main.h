@@ -4,7 +4,7 @@
 # include <util/delay.h>
 # include <avr/interrupt.h>
 # include <unistd.h>
-# include <string.h>
+//# include <string.h>
 
 # define BAUD 115200
 # define DELAY 2000 // 2000ms
