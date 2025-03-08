@@ -14,13 +14,13 @@ void	uart_init(void){
 }
 
 void	uart_tx(void){
-	while (!(UCSR0A & (1 << UDRE0)));
+	while (!(UCSR0A & (1 << UDRE0))); // Checke that UDR0 is ready to receive a new char
 	UDR0 = c;
 }
 
-ISR(USART_RX_vect){ // Interruption declenched by an input char
-	c = UDR0;
-	if (c >= 'a' && c <= 'z')
+ISR(USART_RX_vect){ // Interruption declenched by an input char(reception on RXD)
+	c = UDR0; // I put the input in c ... It empty RXC0
+	if (c >= 'a' && c <= 'z') // I transform alpha chars
 		c -= 32;
 	else if (c >= 'A' && c <= 'Z')
 		c += 32;
@@ -29,7 +29,6 @@ ISR(USART_RX_vect){ // Interruption declenched by an input char
 
 int	main(void){
 	uart_init();
-	
 	while(1){
 	}
 	return (0);
