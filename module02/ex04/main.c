@@ -3,14 +3,16 @@
 volatile char	c;
 char	uart_buffer[64];
 int		uart_index = 0;
-
+volatile char	password_mode = 0;
+int		n = 0;
+char	login[10];
+char	password[10];
 
 void	uart_init(void){
 	int	baud_prescale = (uint16_t)(( F_CPU /16./BAUD) - 0.5);
-	//UCSR0A |= (1 << U2X0);
 	UBRR0H = (baud_prescale >> 8);
 	UBRR0L = baud_prescale;
-	UCSR0B = (1 << TXEN0) | (1 << RXEN0) /*| (1 << RXCIE0)*/;  // Activate Tx and Rx and interrupt when a char is received
+	UCSR0B = (1 << TXEN0) | (1 << RXEN0) | (1 << RXCIE0);  // Activate Tx and Rx and interrupt when a char is received
 	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 bits mode
     //UCSR0B |= (1 << UDRIE0) | (1 << RXCIE0);  // Active l’interruption d’envoi UART et quand un caractere est recu
 	sei();
@@ -21,16 +23,6 @@ void	uart_tx(void){
 	UDR0 = c;
 }
 
-// ISR(USART_RX_vect){ // Interruption declenched by an input char
-
-// 	c = UDR0;
-// 	if (c >= 'a' && c <= 'z')
-// 		c -= 32;
-// 	else if (c >= 'A' && c <= 'Z')
-// 		c += 32;
-// 	uart_tx();
-// }
-
 void uart_printstr(const char *str) {
 	int i = 0;
 	while (str[i] && i < sizeof(uart_buffer) - 1){
@@ -39,24 +31,80 @@ void uart_printstr(const char *str) {
 	}
 	uart_buffer[i] = '\0';
     uart_index = 0;
-    UCSR0B |= (1 << UDRIE0);  // Active l’interruption d’envoi UART
+	while (uart_buffer[uart_index]){
+		while (!(UCSR0A & (1 << UDRE0)));
+		UDR0 = uart_buffer[uart_index++];
+	}
+	sei();
 }
 
 
 void	prompt(void){
-	uart_printstr("Enter your login:\r\n");
-	uart_printstr("    username:\r\n");
-	uart_printstr("    password:\r\n");
+//	while (!(UCSR0A & (1 << UDRE0)));
+//	c = UDR0;
+	password_mode = 0;
+	n = 0;
+	uart_printstr("Enter your login: \r\n    username: \033[s\r\n    password:\r\n\033[u");
 }
 
-// ISR UART → Envoie les caractères un par un
-ISR(USART_UDRE_vect) {
-	//	PORTB ^= (1<< PB1);
-	if (uart_buffer[uart_index]) {
-		UDR0 = uart_buffer[uart_index++];
-	} else {
-		UCSR0B &= ~(1 << UDRIE0);  // Désactive l'interruption une fois terminé
+int		strCompare(char *str1, char *str2){
+	int	i = 0;
+	while (str1[i] || str2[i]){
+		if (str1[i] != str2[i])
+			return (0);
+		i++;
 	}
+	if (str1[i] != str2[i])
+		return (0);
+	return (1);
+}
+
+void	check(void){
+	if (strCompare(LOGIN, login) && strCompare(PASSWORD, password))
+		uart_printstr("OK");
+	else {
+		uart_printstr("KO\r\033[2B");
+		prompt();
+	}
+}
+
+ISR(USART_RX_vect){ // Interruption declenched by an input char
+	c = UDR0;
+	if (c == '\r'){
+		if (!password_mode){
+			uart_printstr("\033[u\033[1B");
+			password_mode ^= 1;
+		}
+		else{
+			uart_printstr("\r\033[1B");
+			check();
+		}
+		n = 0;
+		return;
+	}
+	if (c == 127){
+//		uart_printstr("\r\033[1BBackspace");
+		//TODO: si n = 0 ne rien faire
+		// si n > 0: 
+		// 1)effacer carac de login ou password,
+		// 2)n--,
+		// 3) effacer a emplacement curseur,
+		// 4) deplacer le curseur
+		return;
+	}
+	if (n > 9)
+		return;
+	if (password_mode){
+		password[n] = c;		
+		n++;
+		c = '*';
+	}
+	else if (!password_mode){
+		login[n] = c;
+		n++;
+	}
+	// TODO: si c = enter ... invert password_mode ...place the cursor in the correct place...put n to 0
+	uart_tx();
 }
 
 int	main(void){
@@ -216,4 +264,36 @@ int	main(void){
 | 💡 Peut être activé avec `UCSR0B |= (1 << UDRIE0);` pour déclencher `ISR(USART_UDRE_vect)`. |
 --------------------------------------------------------------
 */
+/*
+--------------------------------------------------------------
+|               ANSI Colors and Control seq                   |
+--------------------------------------------------------------
 
+30              90
+31              91
+32              92
+33              93
+34              94
+35              95
+36              96
+37              97
+\033[49m                 - Reset color
+\033[2K                          - Clear Line
+\033[<L>;<C>H or \033[<L>;<C>f  - Put the cursor at line L and column C.
+\033[<N>A                        - Move the cursor up N lines
+\033[<N>B                        - Move the cursor down N lines
+\033[<N>C                        - Move the cursor forward N columns
+\033[<N>D                        - Move the cursor backward N columns
+
+\033[2J                          - Clear the screen, move to (0,0)
+\033[K                           - Erase to end of line
+\033[s                           - Save cursor position
+\033[u                           - Restore cursor position
+
+\033[4m                          - Underline on
+\033[24m                         - Underline off
+
+\033[1m                          - Bold on
+\033[21m                         - Bold off
+
+*/
