@@ -5,8 +5,8 @@ char	uart_buffer[64];
 int		uart_index = 0;
 volatile char	password_mode = 0;
 int		n = 0;
-char	login[10];
-char	password[10];
+char	login[11];
+char	password[11];
 
 void	uart_init(void){
 	int	baud_prescale = (uint16_t)(( F_CPU /16./BAUD) - 0.5);
@@ -54,23 +54,36 @@ int		strCompare(char *str1, char *str2){
 			return (0);
 		i++;
 	}
-	if (str1[i] != str2[i])
-		return (0);
-	return (1);
+	// if (str1[i] != str2[i])
+	// 	return (0);
+	return (str1[i] == str2[i]);
+}
+
+void	light_show(){
+	DDRB |= (1 << PB1) | (1 << PB2) | (1 << PB3) | (1 << PB4);
+	PORTB = 0b00010111;
 }
 
 void	check(void){
-	if (strCompare(LOGIN, login) && strCompare(PASSWORD, password))
-		uart_printstr("OK");
+	if (strCompare(LOGIN, login) && strCompare(PASSWORD, password)){
+		uart_printstr("Hello ");
+		uart_printstr(login);
+		uart_printstr("\r\033[1B\033[1m\033[95m****Let's Party!****");
+		UCSR0B &= ~(1 << RXCIE0); // Desactivate interruption
+		light_show();
+	}
 	else {
-		uart_printstr("KO\r\033[2B");
+		uart_printstr("Bad combinaison login/password\r\033[2B");
+		uart_printstr(login);
+		uart_printstr("\r\033[2B");
+		uart_printstr(password);
+		uart_printstr("\r\033[2B");
+
 		prompt();
 	}
 }
 
-ISR(USART_RX_vect){ // Interruption declenched by an input char
-	c = UDR0;
-	if (c == '\r'){
+void	enter_pressed(){
 		if (!password_mode){
 			uart_printstr("\033[u\033[1B");
 			password_mode ^= 1;
@@ -80,30 +93,42 @@ ISR(USART_RX_vect){ // Interruption declenched by an input char
 			check();
 		}
 		n = 0;
+}
+
+void	backspace_pressed(){
+	if (n == 0)
+		return; // If beginnig of word, do nothing
+	n--;
+	if (password_mode)
+		password[n] = '\0';
+	else 
+		login[n] = '\0';
+	uart_printstr("\033[1D\033[K");
+}
+
+ISR(USART_RX_vect){ // Interruption declenched by an input char
+	c = UDR0;
+	if (c == '\r'){
+		enter_pressed();
 		return;
 	}
 	if (c == 127){
-//		uart_printstr("\r\033[1BBackspace");
-		//TODO: si n = 0 ne rien faire
-		// si n > 0: 
-		// 1)effacer carac de login ou password,
-		// 2)n--,
-		// 3) effacer a emplacement curseur,
-		// 4) deplacer le curseur
+		backspace_pressed();
 		return;
 	}
-	if (n > 9)
+	if (n >= 10)
 		return;
 	if (password_mode){
 		password[n] = c;		
+		password[n + 1] = '\0';		
 		n++;
 		c = '*';
 	}
 	else if (!password_mode){
 		login[n] = c;
+		login[n + 1] = '\0';
 		n++;
 	}
-	// TODO: si c = enter ... invert password_mode ...place the cursor in the correct place...put n to 0
 	uart_tx();
 }
 
