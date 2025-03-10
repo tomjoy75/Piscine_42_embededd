@@ -8,40 +8,23 @@ int		n = 0;
 char	login[11];
 char	password[11];
 
-void	uart_init(void){
-	int	baud_prescale = (uint16_t)(( F_CPU /16./BAUD) - 0.5);
-	UBRR0H = (baud_prescale >> 8);
-	UBRR0L = baud_prescale;
-	UCSR0B = (1 << TXEN0) | (1 << RXEN0) | (1 << RXCIE0);  // Activate Tx and Rx and interrupt when a char is received
-	UCSR0C = (1 << UCSZ01) | (1 << UCSZ00); // 8 bits mode
-    //UCSR0B |= (1 << UDRIE0) | (1 << RXCIE0);  // Active l’interruption d’envoi UART et quand un caractere est recu
-	sei();
-}
-
-void	uart_tx(void){
-	while (!(UCSR0A & (1 << UDRE0)));
-	UDR0 = c;
-}
-
-void uart_printstr(const char *str) {
-	int i = 0;
-	while (str[i] && i < sizeof(uart_buffer) - 1){
-		uart_buffer[i] = str[i];
-		i++;
-	}
-	uart_buffer[i] = '\0';
-    uart_index = 0;
-	while (uart_buffer[uart_index]){
-		while (!(UCSR0A & (1 << UDRE0)));
-		UDR0 = uart_buffer[uart_index++];
-	}
-	sei();
-}
+// void uart_printstr(const char *str) {
+// 	int i = 0;
+// 	while (str[i] && i < sizeof(uart_buffer) - 1){
+// 		uart_buffer[i] = str[i];
+// 		i++;
+// 	}
+// 	uart_buffer[i] = '\0';
+//     uart_index = 0;
+// 	while (uart_buffer[uart_index]){
+// 		while (!(UCSR0A & (1 << UDRE0)));
+// 		UDR0 = uart_buffer[uart_index++];
+// 	}
+// 	sei();
+// }
 
 
 void	prompt(void){
-//	while (!(UCSR0A & (1 << UDRE0)));
-//	c = UDR0;
 	password_mode = 0;
 	n = 0;
 	uart_printstr("Enter your login: \r\n    username: \033[s\r\n    password:\r\n\033[u");
@@ -54,15 +37,13 @@ int		strCompare(char *str1, char *str2){
 			return (0);
 		i++;
 	}
-	// if (str1[i] != str2[i])
-	// 	return (0);
 	return (str1[i] == str2[i]);
 }
 
-void	light_show(){
-	DDRB |= (1 << PB1) | (1 << PB2) | (1 << PB3) | (1 << PB4);
-	PORTB = 0b00010111;
-}
+// void	light_show(){
+// 	DDRB |= (1 << PB1) | (1 << PB2) | (1 << PB3) | (1 << PB4);
+// 	PORTB = 0b00010111;
+// }
 
 void	check(void){
 	if (strCompare(LOGIN, login) && strCompare(PASSWORD, password)){
@@ -70,14 +51,15 @@ void	check(void){
 		uart_printstr(login);
 		uart_printstr("\r\033[1B\033[1m\033[95m****Let's Party!****");
 		UCSR0B &= ~(1 << RXCIE0); // Desactivate interruption
-		light_show();
+		led_show();
+		led_blink();
 	}
 	else {
 		uart_printstr("Bad combinaison login/password\r\033[2B");
-		uart_printstr(login);
-		uart_printstr("\r\033[2B");
-		uart_printstr(password);
-		uart_printstr("\r\033[2B");
+		// uart_printstr(login);
+		// uart_printstr("\r\033[2B");
+		// uart_printstr(password);
+		// uart_printstr("\r\033[2B");
 
 		prompt();
 	}
@@ -129,7 +111,7 @@ ISR(USART_RX_vect){ // Interruption declenched by an input char
 		login[n + 1] = '\0';
 		n++;
 	}
-	uart_tx();
+	uart_tx(c);
 }
 
 int	main(void){
