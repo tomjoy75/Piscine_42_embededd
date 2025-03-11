@@ -6,11 +6,10 @@
 # include <unistd.h>
 # include "usart.h"
 # include "led.h"
+# include "timer1.h"
 
 //# define BAUD 115200
 # define DELAY 50 // 50ms
-# define LOGIN "tjoyeux"
-# define PASSWORD "cool"
 
 //# define BOUNCE_DELAY 50
 //# define PERIOD 7811

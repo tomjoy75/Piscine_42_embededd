@@ -23,7 +23,7 @@ F_CPU = 16000000UL
 BAUD = 115200
 PORT = /dev/ttyUSB0
 
-SRC = $(NAME).c usart.c led.c  # ✅ Ajout des fichiers source
+SRC = $(NAME).c usart.c led.c timer1.c  # ✅ Ajout des fichiers source
 OBJ = $(SRC:.c=.o)  # ✅ Génère la liste des fichiers objets (.o)
 
 CFLAGS = -mmcu=$(CPU) -DF_CPU=$(F_CPU) -Os  # ✅ Options de compilation

@@ -1,18 +1,30 @@
 #include "main.h"
 
+volatile uint8_t state = 0;
+
+
+ISR(TIMER1_COMPA_vect){
+	led_rgb_clear();
+	switch (state){
+		case 0:
+			led_rgb_on(LED_R);
+			break;
+		case 1:
+			led_rgb_on(LED_G);
+			break;
+		case 2:
+			led_rgb_on(LED_B);
+			break;
+	}
+	state++;
+	state = (state > 2)? 0 : state;
+}
+
 int	main(void){
-//	DDRD |= (1 << PD0) | (1 << PD1);
-	led_init();
+	led_rgb_init();
+	timer1_init(1);
+	timer1_start();
 	while(1){
-		led_on(PORTD, LED_R);
-		_delay_ms(500);	
-		led_off(PORTD, LED_R);
-		led_on(PORTD, LED_G);
-		_delay_ms(500);	
-		led_off(PORTD, LED_G);
-		led_on(PORTD, LED_B);
-		_delay_ms(500);	
-		led_off(PORTD, LED_B);
 	}
 	return (0);
 }
@@ -127,14 +139,14 @@ int	main(void){
 | TIMER2_COMPB             |   9    | Comparaison Timer2                    | ❌ |
 | TIMER2_OVF               |  10    | Overflow Timer2                        | ❌ |
 | TIMER1_CAPT              |  11    | Capture d'entrée Timer1               | ❌ |
-| TIMER1_COMPA             |  12    | Comparaison Timer1 (mode CTC)         | ❌ |
+| TIMER1_COMPA             |  12    | Comparaison Timer1 (mode CTC)         | ✅ Utilisé  |
 | TIMER1_COMPB             |  13    | Comparaison Timer1                    | ❌ |
 | TIMER1_OVF               |  14    | Overflow Timer1                        | ❌ |
 | TIMER0_COMPA             |  15    | Comparaison Timer0 (mode CTC)         | ❌ |
 | TIMER0_COMPB             |  16    | Comparaison Timer0                    | ❌ |
 | TIMER0_OVF               |  17    | Overflow Timer0                        | ❌ |
 | SPI_STC                  |  18    | Fin de transmission SPI               | ❌ |
-| USART_RX                 |  19    | Réception complète UART               | ✅ Utilisé |
+| USART_RX                 |  19    | Réception complète UART               | ❌|
 | USART_UDRE               |  20    | Buffer de transmission UART vide      | ❌ |
 | USART_TX                 |  21    | Transmission complète UART            | ❌ |
 | ADC                      |  22    | Fin de conversion ADC                 | ❌ |
