@@ -4,9 +4,9 @@
 # include <util/delay.h>
 # include <avr/interrupt.h>
 # include <unistd.h>
-# include "usart.h"
-# include "led.h"
-# include "timer1.h"
+# include "utils/usart.h"
+# include "utils/led.h"
+# include "utils/timer1.h"
 
 //# define BAUD 115200
 # define DELAY 50 // 50ms
