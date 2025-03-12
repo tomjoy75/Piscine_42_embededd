@@ -51,11 +51,34 @@ void led_rgb_set(uint8_t leds){
 void init_rgb(){
 // Init the timers
     led_rgb_init();
+    // Sur Timer0
+    // Active le PWM sur OC0A (✅ LED Rouge sur PD6) et sur OC0B Active le PWM sur OC0A (✅ LED Rouge sur PD6)
+    TCCR0A |= (1 << COM0A1) | (1 << COM0B1); 
+    // Mode **Fast PWM** (comptage de 0 à 255) |
+    TCCR0A |= (1 << WGM01) | (1 << WGM00);
+    // Prescaler 8
+    TCCR0B = (1 << CS01); 
+    // Sur Timer2
+    // Active le PWM sur OC2B (✅ LED Bleue sur PD3) |
+    TCCR2A |= (1 << COM2B1);
+    // Mode **Fast PWM** (comptage de 0 à 255) |
+    TCCR2A |= (1 << WGM21) | (1 << WGM20);
+    // Prescaler 8
+    TCCR2B = (1 << CS21);
+
+    // Autres tests
+    //    TCCR0B = (1 << CS00); // No Prescaler 
+    //    TCCR0B = (1 << CS02) | (1 << CS00); // Prescaler 1024
+    //    TCCR2B = (1 << CS22) | (1 << CS20); // Prescaler 1024
+
+
 }
 
 void set_rgb(uint8_t r, uint8_t g, uint8_t b){
-// Set la couleur de la LED
-
+    // Set Output compare register on values 0-255
+    OCR0A = g;
+    OCR0B = r;
+    OCR2B = b;
 }
 
 void led_blink(void){
