@@ -32,16 +32,21 @@ LDFLAGS =  # ✅ Pas de librairies additionnelles pour l'instant
 all: flash  # ✅ Compilation et flash en une seule commande
 
 $(NAME).elf: $(OBJ)  
-	avr-gcc $(CFLAGS) -o $(NAME).elf $(OBJ) $(LDFLAGS)  # ✅ Linker tous les objets
+	@echo "🔗✨ Linker tous les objets"
+	avr-gcc $(CFLAGS) -o $(NAME).elf $(OBJ) $(LDFLAGS)  
 
 %.o: %.c
-	avr-gcc $(CFLAGS) -c $< -o $@  # ✅ Compilation séparée de chaque fichier source
+	@echo "🛠️📦 Compilation séparée de chaque fichier source"
+	avr-gcc $(CFLAGS) -c $< -o $@  
 
 hex: $(NAME).elf
-	avr-objcopy -O ihex $(NAME).elf $(NAME).hex  # ✅ Conversion en format .hex
+	@echo "📦➡️🔢 Conversion en format .hex"
+	avr-objcopy -O ihex $(NAME).elf $(NAME).hex  
 
 flash: hex
-	avrdude -c arduino -p m328p -U flash:w:$(NAME).hex:i -P $(PORT) -b $(BAUD)  # ✅ Flash via avrdude
+	@echo "🚀⚡ Flash via avrdude" 
+	avrdude -c arduino -p m328p -U flash:w:$(NAME).hex:i -P $(PORT) -b $(BAUD)  
 
 clean:
-	rm -f *.hex *.elf *.o  # ✅ Suppression propre des fichiers objets et binaires
+	@echo "🧹🗑️ Suppression propre des fichiers objets et binaires"
+	rm -f *.hex *.elf *.o   
