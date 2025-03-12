@@ -1,29 +1,47 @@
 #include "main.h"
 
 volatile uint8_t	state = 0;
+char		*color_hexa;
 
-void wheel(uint8_t pos) {
-	pos = 255 - pos;
-	if (pos < 85) {
-	set_rgb(255 - pos * 3, 0, pos * 3);
-	} else if (pos < 170) {
-	pos = pos - 85;
-	set_rgb(0, pos * 3, 255 - pos * 3);
-	} else {
-	pos = pos - 170;
-	set_rgb(pos * 3, 255 - pos * 3, 0);
+uint8_t	check_hexa(const char *str){
+	uint8_t i = 0;
+	for (; i < 6; i++){
+		if (str[i] < '0' || (str[i] > '9' && str[i] < 'A') || str[i] > 'F'){
+			uart_printstr("not a valid code...Try again\r\033[1B");
+			return (0);
+		}
 	}
+	if (str[i]){
+		uart_printstr("not a valid code...Try again\r\033[1B");
+		return(0);
+	}
+	return (1);
 }
 
- ISR(TIMER1_COMPA_vect){
-	wheel(state++);
- }
+uint8_t convert_hexa(char msd, char lsd){
+	// msd/lsd: most/least significant digit
+	uint8_t answer = 0;
+	if (msd >= '0' && msd <= '9')
+		answer += (msd - '0') * 16;
+	else if (msd >= 'A' && msd <= 'F')
+		answer += (msd - 'A' + 10) * 16;
+	if (lsd >= '0' && lsd <= '9')
+		answer += (lsd - '0');
+	else if (lsd >= 'A' && lsd <= 'F')
+		answer += (lsd - 'A' + 10);
+	return (answer);	
+}
 
 int	main(void){
+	uart_init();
 	init_rgb();
-	timer1_init(50);
-	timer1_start();
 	while(1){
+		do {
+			uart_printstr("Enter color code(hexa format) : #");
+			color_hexa = uart_readstr();
+		} while (!check_hexa(color_hexa));
+		set_rgb(convert_hexa(color_hexa[0], color_hexa[1]), convert_hexa(color_hexa[2], color_hexa[3]), convert_hexa(color_hexa[4], color_hexa[5]));
+		uart_printstr("\r\033[1B");
 	}
 	return (0);
 }

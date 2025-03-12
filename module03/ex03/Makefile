@@ -32,6 +32,9 @@ flash: hex
 	@echo "🚀⚡ Flash via avrdude" 
 	avrdude -c arduino -p m328p -U flash:w:$(NAME).hex:i -P $(PORT) -b $(BAUD)  
 
+screen: hex flash
+	screen /dev/ttyUSB0 $(BAUD)
+
 clean:
 	@echo "🧹🗑️ Suppression propre des fichiers objets et binaires"
 	rm -f *.hex *.elf *.o
