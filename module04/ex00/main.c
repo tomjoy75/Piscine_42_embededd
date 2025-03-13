@@ -1,36 +1,25 @@
 #include "main.h"
 
-// volatile uint8_t	state = 0;
-
-// int	is_pushed(char pin){
-
-// 	if ((PIND & (1<<pin)) == 0)
-// 		return (1);
-// 	return (0);
-// }
-
+// ISR (Interrupt Service Routine) exécutée quand INT0 est déclenché
 ISR(INT0_vect){
-	//	DD/RB ^= (1<<PB0);
-	PORTB ^= (1<<PB0);
+	EIMSK &= ~(1<<INT0); /// Gestion du debounce
+	_delay_ms(275);
+	EIMSK |= (1<<INT0); 
+	PORTB ^= (1<<PB0); // Inverse l’état de la LED sur PB0
 }
 
 int	main(void){
-	led_init();
-	EICRA |= (1<<ISC01);
-	EIMSK |= (1<<INT0);
-	DDRD &= ~(1<<PD2);
+	led_init(); // Initialise les LED sur PB0 (et les autres)
+	EICRA |= (1<<ISC01); // Mode de declenchement de l'interruption (se declenche quand on passe de high a low)
+	EIMSK |= (1<<INT0); // Active l’interruption externe INT0
+	DDRD &= ~(1<<PD2); // Met PD2 en entree
 	PORTD |= (1<<PD2); // opt. resistance pull up
-	sei();
+	sei(); // Active bit I de SREG (Status Regster) qui active les interruptions
 	while (1)
 	{
-		// if (is_pushed(PD2))
-		// 	PORTB |= (1<<PB0);
-		// else
-		// 	PORTB &= ~(1<<PB0);
 	}
 	return (0);
 }
-
 /*
 --------------------------------------------------------------
 |               INTERRUPTIONS – ATmega328P (p.58 de la doc)               |
@@ -40,7 +29,7 @@ int	main(void){
 |  Vecteur d'interruption  | Numéro | Description                           | Utilisé ? |
 --------------------------------------------------------------
 | RESET                    |   1    | Réinitialisation du microcontrôleur   | ❌ |
-| INT0                     |   2    | Interruption externe sur PD2          | ❌ |
+| INT0                     |   2    | Interruption externe sur PD2          | ✅ Utilisé  |
 | INT1                     |   3    | Interruption externe sur PD3          | ❌ |
 | PCINT0                   |   4    | Interruption changement de pin (D8-D13) | ❌ |
 | PCINT1                   |   5    | Interruption changement de pin (A0-A5) | ❌ |
@@ -50,7 +39,7 @@ int	main(void){
 | TIMER2_COMPB             |   9    | Comparaison Timer2                    | ❌ |
 | TIMER2_OVF               |  10    | Overflow Timer2                        | ❌ |
 | TIMER1_CAPT              |  11    | Capture d'entrée Timer1               | ❌ |
-| TIMER1_COMPA             |  12    | Comparaison Timer1 (mode CTC)         | ✅ Utilisé  |
+| TIMER1_COMPA             |  12    | Comparaison Timer1 (mode CTC)         |  ❌ |
 | TIMER1_COMPB             |  13    | Comparaison Timer1                    | ❌ |
 | TIMER1_OVF               |  14    | Overflow Timer1                        | ❌ |
 | TIMER0_COMPA             |  15    | Comparaison Timer0 (mode CTC)         | ❌ |
