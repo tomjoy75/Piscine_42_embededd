@@ -8,7 +8,7 @@
 #define timer1_PRESCALER 1024
 
 // ✅ Fonction pour initialiser le Timer1 en mode CTC
-void timer1_init(uint16_t freq);
+//void timer1_init(uint16_t freq);
 
 // ✅ Fonction pour démarrer le Timer
 void timer1_start(void);

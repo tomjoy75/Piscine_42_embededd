@@ -1,68 +1,59 @@
 #include "main.h"
-/*
-// ISR (Interrupt Service Routine) exécutée quand INT0 est déclenché
-ISR(INT0_vect){
-	EIMSK &= ~(1<<INT0); /// Gestion du debounce
-	_delay_ms(50);
-	EIMSK |= (1<<INT0); 
-	PORTB ^= (1<<PB0); // Inverse l’état de la LED sur PB0
+
+volatile int direction = 1; // 1 or -1
+volatile int percent = 0;
+
+void	timer1_init(void){
+	DDRB |= (1<<D2); // Configure PB1 as output(LED D2)	
+	TCCR1A |= (1<<WGM11); // Fast PWM
+	TCCR1B |= (1<<WGM12) | (1<<WGM13); 
+	TCCR1A |= (1<<COM1A1); // Mode clear OC1A on compare match 
+	   // OC1A passe LOW quand TCNT1 atteint OCR1A
+    TCCR1B |= (1 << CS11);  // Prescaler 8
+	ICR1 = 19999;// (F_CPU / Prescaler * Temps) - 1
+	// Pour avoir 100 Hz => 16 MHz / (8 * 20000) - 1
+	OCR1A = 0;
 }
 
-int	main(void){
-	led_init(); // Initialise les LED sur PB0 (et les autres)
-	EICRA |= (1<<ISC01); // Mode de declenchement de l'interruption (se declenche quand on passe de high a low)
-	EIMSK |= (1<<INT0); // Active l’interruption externe INT0
-	DDRD &= ~(1<<PD2); // Met PD2 en entree
-	PORTD |= (1<<PD2); // opt. resistance pull up
-	sei(); // Active bit I de SREG (Status Regster) qui active les interruptions
-	while (1)
-	{
-	}
-	return (0);
-}*/
-uint8_t ascend = 1;
-uint8_t percent = 0;
+void	timer0_init(void){
+	TCCR0A |= (1<<WGM01); // CTC
+	TCCR0B |= (1<<CS00) | (1<<CS02); // prescale at /1024
+	OCR0A = 77; // F_CPU / (Prescaler * f_interruption) - 1 avec f_interruption a 100Hz
+	// 200 incrementations/decrementations par sec => 200 Hz
+	// 16MHz / (1024 * 200) - 1
+	TIMSK0 |= (1 << OCIE0A); // Active l'interruption sur OCR0A
+
+}
+
+// ISR(TIMER0_COMPA_vect){
+// 	OCR1A = (uint16_t)percent * (ICR1 / 100);
+// 	if (ascend)//TODO: Transformer en operateur ternaire
+// 		percent++;
+// 	else
+// 		percent--;
+// 	if (ascend && percent >= 100)
+// 		ascend = 0;
+// 	if (!ascend && percent <= 0)
+// 		ascend = 1;
+// }
 
 ISR(TIMER0_COMPA_vect){
-	PORTB |= (1<<PB0); // Debug
-	OCR1A = percent * ICR1 / 100;
-	if (ascend)//TODO: Transformer en operateur ternaire
-		percent++;
-	else
-		percent--;
-	if (ascend && percent == 100)
-		ascend = 0;
-	if (!ascend && percent == 0)
-		ascend = 1;
+	percent += direction;
+
+	if (percent == 100)
+		direction = -1;
+	else if (percent == 0)
+		direction = 1;
+ 	OCR1A = percent * (ICR1 / 100);
 }
 
 int	main(void){
-	DDRB |= (1<<PB1); // Configure PB1 as output(LED D2)	
-	DDRB |= (1<<PB0); // Debug
-	// Gestion Timer1
-	TCCR1A |= (1<<COM1A1); // 
-	TCCR1A |= (1<<WGM10); // Fast PWM
-	TCCR1B |= (1<<WGM12); 
-	ICR1 = 7811;
-	OCR1A = 781; // (F_CPU / Prescaler * Temps) - 1
-	// (before prescale)F_CPU = 16Mhz = 16000000 Hz
-	// (after prescale) F_CPU = 16000000 / 1024  = 15624
-	// (2 operation by sec) OCR1A = 15624 / 2 -1 = 7811
-//	TCCR1A |= (1<<COM1A0); // Activate toggle OC1A to invert automatically PB1  
-	TCCR1B |= (1<<CS12) | (1<<CS10); // prescale at /1024 and launch the timer
-
-	// Gestion Timer0
-	TCCR0A |= (1<<WGM01); // CTC
-	TCCR0A |= (1<<COM0A0); // Toggle OC0A on compare match
-	TCCR0B |= (1<<CS00) | (1<<CS02); // prescale at /1024
-	OCR0A = 78;
+	timer1_init();
+	timer0_init();
 	sei();
 	while (1)
 	{
-		// OCR1A++;
-		// _delay_ms(20);
 	}
-
 	return(0);
 }
 /*
@@ -74,7 +65,7 @@ int	main(void){
 |  Vecteur d'interruption  | Numéro | Description                           | Utilisé ? |
 --------------------------------------------------------------
 | RESET                    |   1    | Réinitialisation du microcontrôleur   | ❌ |
-| INT0                     |   2    | Interruption externe sur PD2          | ✅ Utilisé  |
+| INT0                     |   2    | Interruption externe sur PD2          | ❌  |
 | INT1                     |   3    | Interruption externe sur PD3          | ❌ |
 | PCINT0                   |   4    | Interruption changement de pin (D8-D13) | ❌ |
 | PCINT1                   |   5    | Interruption changement de pin (A0-A5) | ❌ |
@@ -87,7 +78,7 @@ int	main(void){
 | TIMER1_COMPA             |  12    | Comparaison Timer1 (mode CTC)         |  ❌ |
 | TIMER1_COMPB             |  13    | Comparaison Timer1                    | ❌ |
 | TIMER1_OVF               |  14    | Overflow Timer1                        | ❌ |
-| TIMER0_COMPA             |  15    | Comparaison Timer0 (mode CTC)         | ❌ |
+| TIMER0_COMPA             |  15    | Comparaison Timer0 (mode CTC)         | ✅ Utilisé |
 | TIMER0_COMPB             |  16    | Comparaison Timer0                    | ❌ |
 | TIMER0_OVF               |  17    | Overflow Timer0                        | ❌ |
 | SPI_STC                  |  18    | Fin de transmission SPI               | ❌ |
