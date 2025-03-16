@@ -1,90 +1,28 @@
 #include "main.h"
-/*
-volatile int direction = 1; // 1 or -1
-volatile int percent = 0;
 
-void	timer1_init(void){
-	DDRB |= (1<<D2); // Configure PB1 as output(LED D2)	
-	TCCR1A |= (1<<WGM11); // Fast PWM
-	TCCR1B |= (1<<WGM12) | (1<<WGM13); 
-	TCCR1A |= (1<<COM1A1); // Mode clear OC1A on compare match 
-	   // OC1A passe LOW quand TCNT1 atteint OCR1A
-    TCCR1B |= (1 << CS11);  // Prescaler 8
-	ICR1 = 19999;// (F_CPU / Prescaler * Temps) - 1
-	// Pour avoir 100 Hz => 16 MHz / (8 * 20000) - 1
-	OCR1A = 0;
+volatile int i = 0;	// Stocke la valeur affichee sur les leds
+volatile uint16_t debounce_counter = 0; // Compteur du debounce
+volatile uint8_t debounce_active = 0; // Indique si le debounce est actif
+
+//volatile uint16_t compteur_debug = 0;
+
+
+/* FONCTION timer0_init():
+    Configurer Timer0 en mode CTC
+    Régler le prescaler à 1024
+    Définir OCR0A pour générer des interruptions toutes les 1ms
+   Activer l'interruption OCR0A*/
+void timer0_init(void) {
+	TCCR0A |= (1 << WGM01); // Mode CTC
+    TCCR0B |= (1 << CS02) | (1 << CS00); // Prescaler 1024
+    OCR0A = 15; // F_CPU / (1024 * 1000) - 1 = 250 (1ms par tick)
+    TIMSK0 |= (1 << OCIE0A); // Active l'interruption sur OCR0A
 }
 
-void	timer0_init(void){
-	TCCR0A |= (1<<WGM01); // CTC
-	TCCR0B |= (1<<CS00) | (1<<CS02); // prescale at /1024
-	OCR0A = 77; // F_CPU / (Prescaler * f_interruption) - 1 avec f_interruption a 100Hz
-	// 200 incrementations/decrementations par sec => 200 Hz
-	// 16MHz / (1024 * 200) - 1
-	TIMSK0 |= (1 << OCIE0A); // Active l'interruption sur OCR0A
-
-}
-
-// ISR(TIMER0_COMPA_vect){
-// 	OCR1A = (uint16_t)percent * (ICR1 / 100);
-// 	if (ascend)//TODO: Transformer en operateur ternaire
-// 		percent++;
-// 	else
-// 		percent--;
-// 	if (ascend && percent >= 100)
-// 		ascend = 0;
-// 	if (!ascend && percent <= 0)
-// 		ascend = 1;
-// }
-
-ISR(TIMER0_COMPA_vect){
-	percent += direction;
-
-	if (percent == 100)
-		direction = -1;
-	else if (percent == 0)
-		direction = 1;
- 	OCR1A = percent * (ICR1 / 100);
-}
-
-int	main(void){
-	timer1_init();
-	timer0_init();
-	sei();
-	while (1)
-	{
-	}
-	return(0);
-}
-
-void timer1_init(void){
-	TCCR1B |= (1<<WGM12); // CTC
-	TCCR1B |= (1<<CS10) | (1<<CS12); // prescale at /1024
-	OCR1A = 77; // F_CPU / (Prescaler * f_interruption) - 1 avec f_interruption a 100Hz
-	// 200 incrementations/decrementations par sec => 200 Hz
-	// 16MHz / (1024 * 200) - 1
-	TIMSK1 |= (1 << OCIE1A); // Active l'interruption sur OCR0A
-
-}
-
-void sw_init(void){
-	
-}
-*/
-////////////////
-volatile char i = 0;
-
-// int	is_pushed(char pin){
-
-// 	if ((PIND & (1<<pin)) == 0)
-// 	{
-// 		_delay_ms(BOUNCE_DELAY); // Protection for the bounce
-// 		if ((PIND & (1<<pin)) == 0)
-// 			return (1);
-// 	}
-// 	return (0);
-// }
-
+/*FONCTION actualise(valeur i):
+    Effacer l'affichage des LEDs (PB0 à PB2 + PB4)
+    Mettre à jour les LEDs en fonction de i
+    Si le 4ème bit de i est à 1, allumer la LED D4 (PB4)*/
 void	actualise(char i){
 	PORTB &= ~(0b00000111);  // Erase PB0 to PB2
 	PORTB &= ~(1 << PB4);	// Erase PB4
@@ -92,71 +30,99 @@ void	actualise(char i){
 	PORTB |= (i & 0b00000111);  // Actualise LEDs
 	if (i & 0b00001000){ // If the fourth bit is 1
 		PORTB |= 0b00010000; // Light D4
-//		PORTB &= 0b00010111; // Erase fourth bit
 	}
 }
 
+/*INTERRUPTION TIMER0_COMPA_vect():
+    Si le debounce est actif:
+        Incrémenter le compteur de debounce
+        Si debounce_counter ≥ 275 ms:
+            Désactiver le debounce
+            Réactiver INT0 et PCINT2*/
+ISR(TIMER0_COMPA_vect){
+	if (debounce_active) {
+		debounce_counter++;
+		char buf[10];
+		itoa(debounce_counter, buf, 10);
+		uart_printstr("debounce_counter = ");
+		uart_printstr(buf);
+		uart_printstr("\n");
+		if (debounce_counter >= BOUNCE_DELAY){ // En ms
+			debounce_active = 0; // Desactive debounce
+			EIMSK |= (1<<INT0); // Reactive INT0
+			PCICR |= (1 << PCIE2);  // Reactive PCINT2
+		}
+	}
+}
+
+/*INTERRUPTION INT0_vect():
+    Si debounce non actif:
+        Activer le debounce
+        Réinitialiser le compteur de debounce
+        Désactiver INT0 temporairement
+        Si i < 15:
+            Incrémenter i
+            Mettre à jour les LEDs*/
 ISR(INT0_vect){
-	// EIMSK &= ~(1<<INT0); /// Gestion du debounce
-	// _delay_ms(275);
-	// EIMSK |= (1<<INT0); 
-	if (i < 15)
-		i++;
-	actualise(i);
+	if (!debounce_active){ // Check si debounce est actif
+		debounce_active = 1; // Active le flag de debounce
+		debounce_counter = 0; // Reinitialise le compteur
+		EIMSK &= ~(1<<INT0); /// Desactive le compteur temporairement
+		_delay_ms(10);
+		if (!(PIND & (1 << PD2))){
+			if (i < 15)
+				i++;
+			actualise(i);
+		}
+	}
 }
 
-ISR(INT1_vect){
-//	PORTB ^= (1<<D1);  // Toggle LED D1 pour voir si l'ISR fonctionne
-	// EIMSK &= ~(1<<INT1); /// Gestion du debounce
-	// _delay_ms(275);
-	// EIMSK |= (1<<INT1); 
-	//	PORTB ^= (1<<PB0); // Inverse l’état de la LED sur PB0
-	if (i > 0)
-	i--;
-	actualise(i);
+/*INTERRUPTION PCINT2_vect():
+    Si debounce non actif:
+        Activer le debounce et bouton SW2 pressé
+        Réinitialiser le compteur de debounce
+        Désactiver PCIE2 temporairement
+        Si i > 0:
+            Décrémenter i
+            Mettre à jour les LEDs*/
+ISR(PCINT2_vect){
+	if (!debounce_active && !(PIND & (1 << PD4))){ // Vérifie si PD4 est pressé
+		debounce_active = 1;  // Active le debounce de PCINT2
+		debounce_counter = 0; // Reinitialise le compteur
+		PCICR &= ~(1 << PCIE2);
+		if (i > 0)
+			i--;
+		actualise(i);
+	}
 }
 
+/*FONCTION main():
+    Initialiser les LEDs
+    Initialiser Timer0
+    
+    Configurer INT0 sur front descendant
+    Activer les interruptions de changement d'état sur PCINT2
+    Activer INT0 et PCINT2
+    Configurer les broches PD2 et PD4 en entrée avec pull-up activé
+    Activer les interruptions globales
+    BOUCLE INFINIE:
+        Attendre (tout se passe dans les interruptions)*/
 int	main(void){
 
-//	char sw1_flag = 0;
-//	char sw2_flag = 0;
 	led_init();
-//	EICRA |= (1<<ISC01) | (1<<ISC11); // Mode de declencheent des interruptions
-	EICRA |= (1<<ISC01) | (1<<ISC00) | (1<<ISC11) | (1<<ISC10);
+	timer0_init();
 
-	EIMSK |= (1<<INT0) | (1<<INT1);
-//	DDRD &= ~(1<<PD2) | ~(1<<PD4);
+	EICRA |= (1<<ISC01) ; // Mode de declenchement des interruptions
+	PCICR |= (1 << PCIE2);
+	
+	EIMSK |= (1<<INT0);
+	PCMSK2 |= (1 << PCINT20);
+	DDRD &= ~((1<<PD2) | (1<<PD4));
 	PORTD |= (1<<PD2) | (1<<PD4);
-	// DDRB |= (1<<PB0);
-	// DDRB |= (1<<PB1);
-	// DDRB |= (1<<PB2);
-	// DDRB |= (1<<PB4);
-	//	DDRB |= 0b00010111;
-	DDRD &= ~(1<<PD2);
-	DDRD &= ~(1<<PD4);
+	
 	sei();
+
 	while (1){
-		// while (is_pushed(PD2)){
-		// 	if (!sw1_flag){
-		// 		if (i < 15)
-		// 			i++;
-		// 		// Actualiser les lights sur ++i
-		// 		actualise(i);
-		// 		sw1_flag = 1;
-		// 	}
-		// }
-		
-		// while (is_pushed(PD4)){
-		// 	if (!sw2_flag){
-		// 		if (i > 0)
-		// 			i--;
-		// 		// Actualiser les lights sur --i
-		// 		actualise(i);
-		// 		sw2_flag = 1;
-		// 	}
-		// }
-		// sw1_flag = 0;
-		// sw2_flag = 0;
 	}
 	return (0);
 }
