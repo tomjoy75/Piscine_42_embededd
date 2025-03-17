@@ -11,7 +11,7 @@
 //# define BAUD 115200
 # define DELAY 50 // 50ms
 
-//# define BOUNCE_DELAY 50
+# define BOUNCE_DELAY 200
 //# define PERIOD 7811
 
 #endif

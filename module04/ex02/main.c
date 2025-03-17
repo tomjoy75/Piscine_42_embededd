@@ -42,11 +42,11 @@ void	actualise(char i){
 ISR(TIMER0_COMPA_vect){
 	if (debounce_active) {
 		debounce_counter++;
-		char buf[10];
-		itoa(debounce_counter, buf, 10);
-		uart_printstr("debounce_counter = ");
-		uart_printstr(buf);
-		uart_printstr("\n");
+		// char buf[10];
+		// itoa(debounce_counter, buf, 10);
+		// uart_printstr("debounce_counter = ");
+		// uart_printstr(buf);
+		// uart_printstr("\n");
 		if (debounce_counter >= BOUNCE_DELAY){ // En ms
 			debounce_active = 0; // Desactive debounce
 			EIMSK |= (1<<INT0); // Reactive INT0

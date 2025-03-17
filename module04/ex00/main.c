@@ -1,15 +1,48 @@
 #include "main.h"
 
+volatile uint16_t debounce_counter = 0; // Compteur du debounce
+volatile uint8_t debounce_active = 0; // Indique si le debounce est actif
+
+void timer0_init(void) {
+	TCCR0A |= (1 << WGM01); // Mode CTC
+    TCCR0B |= (1 << CS02) | (1 << CS00); // Prescaler 1024
+    OCR0A = 15; // F_CPU / (1024 * 1000) - 1 = 250 (1ms par tick)
+    TIMSK0 |= (1 << OCIE0A); // Active l'interruption sur OCR0A
+}
+
+/*INTERRUPTION TIMER0_COMPA_vect():
+    Si le debounce est actif:
+        Incrémenter le compteur de debounce
+        Si debounce_counter ≥ 275 ms:
+            Désactiver le debounce
+            Réactiver INT0 et PCINT2*/
+ISR(TIMER0_COMPA_vect){
+	if (debounce_active) {
+		debounce_counter++;
+		if (debounce_counter >= BOUNCE_DELAY){ // En ms
+			debounce_active = 0; // Desactive debounce
+			EIMSK |= (1<<INT0); // Reactive INT0
+//			PCICR |= (1 << PCIE2);  // Reactive PCINT2
+		}
+	}
+}
+
 // ISR (Interrupt Service Routine) exécutée quand INT0 est déclenché
 ISR(INT0_vect){
-	EIMSK &= ~(1<<INT0); /// Gestion du debounce
-	_delay_ms(275);
-	EIMSK |= (1<<INT0); 
-	PORTB ^= (1<<PB0); // Inverse l’état de la LED sur PB0
+	if (!debounce_active){
+		debounce_active = 1; // Active le flag de debounce
+		debounce_counter = 0; // Reinitialise le compteur
+		EIMSK &= ~(1<<INT0); /// Gestion du debounce
+//		_delay_ms(10);
+//		EIMSK |= (1<<INT0); 
+		if (!(PIND & (1 << PD2))) // Vérifie si le bouton est TOUJOURS pressé après 10ms
+			PORTB ^= (1<<PB0); // Inverse l’état de la LED sur PB0
+	}
 }
 
 int	main(void){
 	led_init(); // Initialise les LED sur PB0 (et les autres)
+	timer0_init();
 	EICRA |= (1<<ISC01); // Mode de declenchement de l'interruption (se declenche quand on passe de high a low)
 	EIMSK |= (1<<INT0); // Active l’interruption externe INT0
 	DDRD &= ~(1<<PD2); // Met PD2 en entree
