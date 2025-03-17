@@ -35,3 +35,4 @@ https://www.quora.com/What-is-DDRB-PORTB-and-PINB-and-what-do-they-do-What-does-
 ## For the clock
 
 https://qiriro.com/bme6163/static_files/notes/L3/Newbie's%20Guide%20to%20AVR%20Timers.pdf
+https://ece-classes.usc.edu/ee459/library/documents/ADC.pdf
